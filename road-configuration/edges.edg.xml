@@ -1,0 +1,24 @@
+<edges>
+    <!-- Horizontal Road (Left → Center) -->
+    <edge id="left_to_center" from="left" to="center" numLanes="2" speed="13.89">
+        <!-- Lane 0: Left → Right (through traffic) -->
+        <!-- Lane 1: Left → Down (left-turn lane) -->
+    </edge>
+
+    <!-- Horizontal Road (Right → Center) -->
+    <edge id="right_to_center" from="right" to="center" numLanes="2" speed="13.89">
+        <!-- Lane 0: Right → Left (through traffic) -->
+        <!-- Lane 1: Right → Down (right-turn lane) -->
+    </edge>
+
+    <!-- Vertical Road (Center → Down) -->
+    <edge id="center_to_down" from="center" to="down" numLanes="2" speed="13.89">
+        <!-- Lane 0: From left-to-down traffic -->
+        <!-- Lane 1: From right-to-down traffic -->
+    </edge>
+
+    <!-- Reverse Edges (for completeness) -->
+    <edge id="center_to_left" from="center" to="left" numLanes="2" speed="13.89"/>
+    <edge id="center_to_right" from="center" to="right" numLanes="2" speed="13.89"/>
+    <edge id="down_to_center" from="down" to="center" numLanes="2" speed="13.89"/>
+</edges>

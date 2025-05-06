@@ -1,0 +1,13 @@
+<additional>
+    <!-- Left-to-Center connections -->
+    <connection from="left_to_center" fromLane="0" to="center_to_down" toLane="0"/>  <!-- Through traffic -->
+    <connection from="left_to_center" fromLane="1" to="center_to_right" toLane="1"/>   <!-- Left-turn -->
+
+    <!-- Right-to-Center connections -->
+    <connection from="right_to_center" fromLane="0" to="center_to_left" toLane="0"/>  <!-- Through traffic -->
+    <connection from="right_to_center" fromLane="1" to="center_to_down" toLane="1"/>  <!-- Right-turn -->
+
+    <!-- Down-to-Center connections (optional) -->
+    <connection from="down_to_center" fromLane="0" to="center_to_right" toLane="0"/>   <!-- Upward traffic -->
+    <connection from="down_to_center" fromLane="1" to="center_to_left" toLane="1"/>  <!-- Upward traffic -->
+</additional>
