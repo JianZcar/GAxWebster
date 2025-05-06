@@ -1,0 +1,42 @@
+name: Run Simulation only
+
+on:
+  workflow_dispatch:
+
+# A workflow run is made up of one or more jobs that can run sequentially or in parallel
+jobs:
+  # This workflow contains a single job called "build"
+  build:
+    # The type of runner that the job will run on
+    runs-on: ubuntu-latest
+
+    # Steps represent a sequence of tasks that will be executed as part of the job
+    steps:
+      - name: 🔄 Checkout repository
+      - uses: actions/checkout@v4
+
+      - name: ➕ Install SUMO
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y software-properties-common
+          sudo add-apt-repository ppa:sumo/stable -y
+          sudo apt-get update
+          sudo apt-get install -y sumo sumo-tools sumo-doc
+      
+
+      - name: ⚙️ Set up Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: '3.10'
+      
+      - name: 📦 Install dependencies
+        run: pip install matplotlib
+
+      - name: 🚀 Run graph generator
+        run: python src/generate_avg_travel_times.py
+
+      - name: 📂 Upload graph artifact
+        uses: actions/upload-artifact@v3
+        with:
+          name: avg-travel-times-graph
+          path: avg_travel_times.png
