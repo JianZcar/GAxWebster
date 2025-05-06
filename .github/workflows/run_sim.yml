@@ -19,7 +19,7 @@ jobs:
           sudo apt-get update
           sudo apt-get install -y sumo sumo-tools sumo-doc
           
-      - name: 🚀 Sumo
+      - name: 🚀 Run Sumo
         run: |
           cd road-configuration
           netconvert -n nodes.nod.xml -e edges.edg.xml -x connections.add.xml -o net.net.xml
