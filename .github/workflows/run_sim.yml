@@ -18,7 +18,13 @@ jobs:
           sudo add-apt-repository ppa:sumo/stable -y
           sudo apt-get update
           sudo apt-get install -y sumo sumo-tools sumo-doc
-
+          
+      - name: 🚀 Sumo
+        run: |
+          cd road-configuration
+          netconvert -n nodes.nod.xml -e edges.edg.xml -x connections.add.xml -o net.net.xml
+          sumo   -n net.net.xml   -r routes.rou.xml  --vehroute-output ../veh_delays.xml
+        
       - name: ⚙️ Set up Python
         uses: actions/setup-python@v4
         with:
@@ -31,7 +37,7 @@ jobs:
         run: python src/generate_avg_travel_times.py
 
       - name: 📂 Upload graph artifact
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4.6.2
         with:
           name: avg-travel-times-graph
           path: avg_travel_times.png
