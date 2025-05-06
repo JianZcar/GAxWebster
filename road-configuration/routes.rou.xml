@@ -1,0 +1,38 @@
+<routes>
+    <!-- Vehicle Type -->
+    <vType id="car" vClass="passenger" speedFactor="1.0" length="5.0"/>
+
+    <!-- Routes -->
+    <!-- Left → Right (through lane) -->
+    <route id="left_to_right" edges="left_to_center center_to_right"/>
+    
+    <!-- Left → Down (left-turn lane) -->
+    <route id="left_to_down" edges="left_to_center center_to_down"/>
+
+    <!-- Right → Left (through lane) -->
+    <route id="right_to_left" edges="right_to_center center_to_left"/>
+
+    <!-- Right → Down (right-turn lane) -->
+    <route id="right_to_down" edges="right_to_center center_to_down"/>
+    
+    <route id="down_to_right" edges="down_to_center center_to_right"/>
+    
+    <route id="down_to_left" edges="down_to_center center_to_left"/>
+
+    <!-- Flows with Lane-Specific Departures -->
+    <!-- Left → Right (uses lane 0) -->
+    <flow id="flow_left_right" type="car" route="left_to_right" departLane="0" begin="0" end="3600" vehsPerHour="300"/>
+
+    <!-- Left → Down (uses lane 1) -->
+    <flow id="flow_left_down" type="car" route="left_to_down" departLane="1" begin="0" end="3600" vehsPerHour="300"/>
+
+    <!-- Right → Left (uses lane 0) -->
+    <flow id="flow_right_left" type="car" route="right_to_left" departLane="0" begin="0" end="3600" vehsPerHour="300"/>
+
+    <!-- Right → Down (uses lane 1) -->
+    <flow id="flow_right_down" type="car" route="right_to_down" departLane="1" begin="0" end="3600" vehsPerHour="300"/>
+    
+    <flow id="flow_down_right" type="car" route="down_to_right" departLane="1" begin="0" end="3600" vehsPerHour="300"/>
+    
+    <flow id="flow_down_left" type="car" route="down_to_left" departLane="1" begin="0" end="3600" vehsPerHour="300"/>
+</routes>
