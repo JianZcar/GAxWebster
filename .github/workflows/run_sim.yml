@@ -3,17 +3,13 @@ name: Run Simulation only
 on:
   workflow_dispatch:
 
-# A workflow run is made up of one or more jobs that can run sequentially or in parallel
 jobs:
-  # This workflow contains a single job called "build"
   build:
-    # The type of runner that the job will run on
     runs-on: ubuntu-latest
 
-    # Steps represent a sequence of tasks that will be executed as part of the job
     steps:
       - name: 🔄 Checkout repository
-      - uses: actions/checkout@v4
+        uses: actions/checkout@v4
 
       - name: ➕ Install SUMO
         run: |
@@ -22,13 +18,18 @@ jobs:
           sudo add-apt-repository ppa:sumo/stable -y
           sudo apt-get update
           sudo apt-get install -y sumo sumo-tools sumo-doc
-      
-
+          
+      - name: 🚀 Run SUMO
+        run: |
+          cd road-configuration
+          netconvert -n nodes.nod.xml -e edges.edg.xml -x connections.add.xml -o net.net.xml
+          sumo   -n net.net.xml   -r routes.rou.xml  --vehroute-output ../veh_delays.xml
+        
       - name: ⚙️ Set up Python
         uses: actions/setup-python@v4
         with:
           python-version: '3.10'
-      
+
       - name: 📦 Install dependencies
         run: pip install matplotlib
 
@@ -36,7 +37,7 @@ jobs:
         run: python src/generate_avg_travel_times.py
 
       - name: 📂 Upload graph artifact
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4.6.2
         with:
           name: avg-travel-times-graph
           path: avg_travel_times.png
