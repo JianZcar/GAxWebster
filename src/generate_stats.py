@@ -7,21 +7,29 @@ import seaborn as sns
 tree = ET.parse('tripinfo.xml')
 root = tree.getroot()
 
-# Extract data into a list of dictionaries
+
+def safe_get(element, attr, default=0.0):
+    """Safe XML attribute extraction with error handling"""
+    try:
+        return float(element.get(attr)) if element is not None else default
+    except (TypeError, ValueError):
+        return default
+
+# Extract data with error handling
 data = []
 for trip in root.findall('tripinfo'):
     emissions = trip.find('emissions')
     entry = {
         'id': trip.get('id'),
-        'depart': float(trip.get('depart')),
-        'arrival': float(trip.get('arrival')),
-        'duration': float(trip.get('duration')),
+        'depart': safe_get(trip, 'depart'),
+        'arrival': safe_get(trip, 'arrival'),
+        'duration': safe_get(trip, 'duration'),
         'route': trip.get('id').split('.')[0],
-        'CO2_abs': float(emissions.get('CO2_abs')),
-        'fuel_abs': float(emissions.get('fuel_abs')),
-        'NOx_abs': float(emissions.get('NOx_abs')),
-        'waitingTime': float(trip.get('waitingTime')),
-        'timeLoss': float(trip.get('timeLoss'))
+        'CO2_abs': safe_get(emissions, 'CO2_abs'),
+        'fuel_abs': safe_get(emissions, 'fuel_abs'),
+        'NOx_abs': safe_get(emissions, 'NOx_abs'),
+        'waitingTime': safe_get(trip, 'waitingTime'),
+        'timeLoss': safe_get(trip, 'timeLoss')
     }
     data.append(entry)
 
