@@ -34,7 +34,7 @@ jobs:
         run: pip install matplotlib
 
       - name: 🚀 Run graph generator
-        run: python src/generate_avg_travel_times.py
+        run: python src/generate_stats.py
 
       - name: 📂 Upload graph artifact
         uses: actions/upload-artifact@v4.6.2
