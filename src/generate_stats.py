@@ -37,7 +37,7 @@ def parse_xml(xml_file):
 
 # Data processing
 try:
-    df = parse_xml('tripinfos.xml')
+    df = parse_xml('tripinfo.xml')
     df = df[df['CO2'] > 0]  # Filter valid emissions
     
     print("Data Summary:")
