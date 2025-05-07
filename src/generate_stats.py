@@ -3,7 +3,7 @@ import pandas as pd
 import matplotlib.pyplot as plt
 
 # --- Configuration ---
-xml_file = 'tripinfos.xml'  # Input XML file
+xml_file = 'tripinfo.xml'  # Input XML file
 output_image = 'traffic_report.png'  # Output figure
 
 # --- Parse XML ---
