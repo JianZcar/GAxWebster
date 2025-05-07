@@ -35,17 +35,8 @@ def parse_xml(xml_file):
             elem.clear()
     return pd.DataFrame(data)
 
-# Data processing
-try:
-    df = parse_xml('tripinfo.xml')
-    df = df[df['CO2'] > 0]  # Filter valid emissions
-    
-    print("Data Summary:")
-    print(df[['CO2', 'fuel', 'NOx']].describe())
-    
-except Exception as e:
-    print(f"Error: {str(e)}")
-    exit()
+
+df = parse_xml('tripinfo.xml')
 
 # Visualization setup
 plt.figure(figsize=(20, 24))
