@@ -30,7 +30,7 @@ def parse_xml(xml_file):
 
 # Load data with XML validation
 try:
-    df = parse_xml('tripinfos.xml')
+    df = parse_xml('tripinfo.xml')
     print("Data Validation:")
     print(f"Total entries: {len(df)}")
     print(f"Non-zero CO₂ entries: {df[df['CO2_abs'] > 0].shape[0]}")
