@@ -23,7 +23,7 @@ jobs:
         run: |
           cd road-configuration
           netconvert -n nodes.nod.xml -e edges.edg.xml -x connections.add.xml -o net.net.xml
-          sumo   -n net.net.xml   -r routes.rou.xml  --tripinfo-output ../tripinfo.xml
+          sumo   -n net.net.xml   -r routes.rou.xml  --tripinfo-output ../tripinfo.xml --device.emissions.probability 1.0
         
       - name: ⚙️ Set up Python
         uses: actions/setup-python@v4
