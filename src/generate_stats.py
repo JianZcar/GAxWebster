@@ -66,30 +66,18 @@ route_stats = filtered_df.groupby('route').agg({
     'routeLength': 'first'
 }).reset_index()
 
-sns.barplot(x='route', y=('duration', 'mean'), 
+# Flatten multi-index columns
+route_stats.columns = ['_'.join(col).strip() if isinstance(col, tuple) else col for col in route_stats.columns]
+
+sns.barplot(x='route', y='duration_mean', 
            data=route_stats, ax=ax1)
 plt.title('Average Trip Duration by Route', fontsize=14)
 plt.xlabel('Route')
 plt.ylabel('Duration (s)')
 
-# 2. Route Congestion Patterns (Fixed)
-ax2 = plt.subplot(gs[0, 1])
-congestion = filtered_df.groupby('route').agg({
-    'timeLoss': 'mean',
-    'waiting': 'mean',
-    'id': 'count'
-}).rename(columns={'id': 'count'}).reset_index()
-
-sns.scatterplot(x='timeLoss', y='waiting', size='count',
-               hue='route', data=congestion, ax=ax2,
-               sizes=(100, 500), alpha=0.8)
-plt.title('Route Congestion Patterns', fontsize=14)
-plt.xlabel('Average Time Loss (s)')
-plt.ylabel('Average Waiting Time (s)')
-
 # 3. Route Efficiency Analysis
 ax3 = plt.subplot(gs[1, 0])
-route_stats['efficiency'] = route_stats['routeLength'] / route_stats['duration']['mean']
+route_stats['efficiency'] = route_stats['routeLength_first'] / route_stats['duration_mean']
 sns.barplot(x='route', y='efficiency', data=route_stats, ax=ax3)
 plt.title('Route Efficiency (Distance/Duration)', fontsize=14)
 plt.ylabel('Efficiency (m/s)')
