@@ -11,25 +11,31 @@ root = tree.getroot()
 records = []
 for ti in root.findall('tripinfo'):
     attrib = ti.attrib
-    # parse emissions sub-element
-    em = ti.find('emissions').attrib
+
+    # Try to find emissions; if missing, set all to 0
+    em_elem = ti.find('emissions')
+    if em_elem is not None:
+        em = em_elem.attrib
+    else:
+        em = {k: '0' for k in ('fuel_abs', 'CO2_abs', 'NOx_abs', 'CO_abs', 'HC_abs', 'PMx_abs')}
+
     # direction from id
     flow = attrib['id'].split('.')[0].replace('flow_', '')
     records.append({
-        'id':               attrib['id'],
+        'id':               attrib.get('id', ''),
         'flow':             flow,
-        'duration':         float(attrib['duration']),
-        'routeLength':      float(attrib['routeLength']),
-        'timeLoss':         float(attrib['timeLoss']),
-        'waitingTime':      float(attrib['waitingTime']),
-        'fuel_abs':         float(em['fuel_abs']),
-        'CO2_abs':          float(em['CO2_abs']),
-        'NOx_abs':          float(em['NOx_abs']),
-        'CO_abs':           float(em['CO_abs']),
-        'HC_abs':           float(em['HC_abs']),
-        'PMx_abs':          float(em['PMx_abs']),
-        'speedFactor':      float(attrib['speedFactor']),
-        'arrivalSpeed':     float(attrib['arrivalSpeed']),
+        'duration':         float(attrib.get('duration', 0)),
+        'routeLength':      float(attrib.get('routeLength', 0)),
+        'timeLoss':         float(attrib.get('timeLoss', 0)),
+        'waitingTime':      float(attrib.get('waitingTime', 0)),
+        'fuel_abs':         float(em.get('fuel_abs', 0)),
+        'CO2_abs':          float(em.get('CO2_abs', 0)),
+        'NOx_abs':          float(em.get('NOx_abs', 0)),
+        'CO_abs':           float(em.get('CO_abs', 0)),
+        'HC_abs':           float(em.get('HC_abs', 0)),
+        'PMx_abs':          float(em.get('PMx_abs', 0)),
+        'speedFactor':      float(attrib.get('speedFactor', 0)),
+        'arrivalSpeed':     float(attrib.get('arrivalSpeed', 0)),
     })
 
 df = pd.DataFrame(records)
@@ -55,7 +61,7 @@ df.set_index('id')[em_cols].plot(kind='bar', stacked=True, ax=ax)
 ax.set_xlabel('Vehicle ID')
 ax.set_ylabel('Emissions (mg)')
 ax.set_title('Stacked Emissions per Trip')
-ax.tick_params(axis='x', rotation=45, labelright=False)
+ax.tick_params(axis='x', rotation=45, ha='right')
 save_fig(fig, 'emissions_per_vehicle.png')
 
 # 5. Plot 3: Fuel vs. CO2
@@ -72,7 +78,7 @@ df.boxplot(column='timeLoss', by='flow', ax=ax)
 ax.set_xlabel('Flow Direction')
 ax.set_ylabel('Time Loss (s)')
 ax.set_title('Time Loss by Flow Direction')
-fig.suptitle('')  # remove the automatic "Boxplot grouped by flow" subtitle
+fig.suptitle('')  # remove automatic subtitle
 save_fig(fig, 'time_loss_by_flow.png')
 
 # 7. Plot 5: Speed Factor vs. Final Speed
@@ -84,4 +90,3 @@ plt.title('Speed Factor vs. Final Speed')
 save_fig(fig, 'speed_factor_vs_final_speed.png')
 
 print("All plots generated and saved as PNG files.")
-
