@@ -4,18 +4,17 @@ import matplotlib.pyplot as plt
 import seaborn as sns
 
 # Parse XML data
-tree = ET.parse('tripinfo.xml')
+tree = ET.parse('tripinfos.xml')
 root = tree.getroot()
-
 
 def safe_get(element, attr, default=0.0):
     """Safe XML attribute extraction with error handling"""
     try:
         return float(element.get(attr)) if element is not None else default
-    except (TypeError, ValueError):
+    except (TypeError, ValueError, AttributeError):
         return default
 
-# Extract data with error handling
+# Extract data with enhanced validation
 data = []
 for trip in root.findall('tripinfo'):
     emissions = trip.find('emissions')
@@ -33,55 +32,55 @@ for trip in root.findall('tripinfo'):
     }
     data.append(entry)
 
-# Create DataFrame
+# Create DataFrame and verify data
 df = pd.DataFrame(data)
+print("CO₂ Data Summary:")
+print(df['CO2_abs'].describe())
 
-# Set style
-sns.set(style="whitegrid", palette="pastel")
-plt.figure(figsize=(12, 8))
+# Set visualization style
+plt.figure(figsize=(16, 10))
+sns.set_style("darkgrid")
+palette = sns.color_palette("rocket_r", as_cmap=True)
 
-# Visualization 1: Time vs Duration with Emissions
+# Visualization 1: Time-CO₂ Relationship (Enhanced)
 plt.subplot(2, 2, 1)
-scatter = sns.scatterplot(x='depart', y='duration', hue='CO2_abs', 
-                         size='fuel_abs', data=df, palette='viridis')
-plt.title('Trip Duration vs Departure Time\n(Color: CO₂ Emissions, Size: Fuel Consumption)')
-plt.xlabel('Departure Time (s)')
-plt.ylabel('Duration (s)')
-plt.legend(bbox_to_anchor=(1.05, 1), loc='upper left')
+sc = sns.scatterplot(x='depart', y='duration', hue='CO2_abs', size='fuel_abs',
+                    data=df, palette=palette, sizes=(20, 200), edgecolor='black')
+plt.title('Trip Duration vs Departure Time\nCO₂ Emissions Intensity', fontsize=14)
+plt.xlabel('Departure Time (s)', fontsize=12)
+plt.ylabel('Duration (s)', fontsize=12)
+norm = plt.Normalize(df['CO2_abs'].min(), df['CO2_abs'].max())
+sm = plt.cm.ScalarMappable(cmap=palette, norm=norm)
+cbar = plt.colorbar(sm)
+cbar.set_label('CO₂ Emissions (mg)', rotation=270, labelpad=20)
 
-# Visualization 2: Emissions Distribution
+# Visualization 2: CO₂ Distribution Analysis
 plt.subplot(2, 2, 2)
-sns.histplot(df['CO2_abs'], kde=True, color='teal')
-plt.title('Distribution of CO₂ Emissions')
-plt.xlabel('CO₂ Emissions (mg)')
-plt.ylabel('Number of Trips')
+sns.histplot(df['CO2_abs'], kde=True, color='darkgreen', bins=30)
+plt.title('CO₂ Emissions Distribution', fontsize=14)
+plt.xlabel('CO₂ Emissions (mg)', fontsize=12)
+plt.ylabel('Frequency', fontsize=12)
+plt.axvline(df['CO2_abs'].mean(), color='red', linestyle='--', 
+            label=f'Mean: {df["CO2_abs"].mean():.2f} mg')
+plt.legend()
 
-# Visualization 3: Fuel vs CO2 Emissions
+# Visualization 3: Route-based CO₂ Analysis
 plt.subplot(2, 2, 3)
-sns.regplot(x='fuel_abs', y='CO2_abs', data=df, scatter_kws={'alpha':0.5})
-plt.title('Fuel Consumption vs CO₂ Emissions')
-plt.xlabel('Fuel Consumption (ml)')
-plt.ylabel('CO₂ Emissions (mg)')
+route_co2 = df.groupby('route')['CO2_abs'].agg(['mean', 'std']).reset_index()
+sns.barplot(x='mean', y='route', data=route_co2, palette='viridis', xerr=route_co2['std'])
+plt.title('Average CO₂ Emissions by Route\nwith Standard Deviation', fontsize=14)
+plt.xlabel('Average CO₂ Emissions (mg)', fontsize=12)
+plt.ylabel('Route', fontsize=12)
 
-# Visualization 4: Route Performance
+# Visualization 4: Time Loss vs CO₂ Emissions
 plt.subplot(2, 2, 4)
-route_metrics = df.groupby('route').agg({
-    'duration': 'mean',
-    'timeLoss': 'mean',
-    'CO2_abs': 'mean'
-}).reset_index()
+sns.regplot(x='timeLoss', y='CO2_abs', data=df, scatter_kws={'alpha':0.6}, 
+          line_kws={'color': 'red'})
+plt.title('Time Loss vs CO₂ Emissions', fontsize=14)
+plt.xlabel('Time Loss (s)', fontsize=12)
+plt.ylabel('CO₂ Emissions (mg)', fontsize=12)
 
-melted = route_metrics.melt(id_vars='route', 
-                           value_vars=['duration', 'timeLoss', 'CO2_abs'],
-                           var_name='metric')
-
-sns.barplot(x='value', y='route', hue='metric', data=melted, orient='h')
-plt.title('Route Performance Comparison')
-plt.xlabel('Value')
-plt.ylabel('Route')
-plt.legend(title='Metric')
-
-# Adjust layout and save
+# Final adjustments and save
 plt.tight_layout()
-plt.savefig('trip_analysis.png', dpi=300, bbox_inches='tight')
+plt.savefig('enhanced_emissions_analysis.png', dpi=300, bbox_inches='tight')
 plt.show()
