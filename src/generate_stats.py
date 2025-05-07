@@ -4,7 +4,7 @@ import matplotlib.pyplot as plt
 import seaborn as sns
 
 def safe_get(element, attr, default=0.0):
-    """Enhanced safe XML attribute extraction"""
+    """Robust XML attribute extraction"""
     try:
         if element is None:
             return default
@@ -13,30 +13,38 @@ def safe_get(element, attr, default=0.0):
     except (TypeError, ValueError, AttributeError):
         return default
 
-# Parse XML with explicit closing check
 def parse_xml(xml_file):
+    """Complete XML parsing with all required fields"""
     data = []
     for event, elem in ET.iterparse(xml_file, events=('end',)):
         if elem.tag == 'tripinfo':
             emissions = elem.find('emissions')
             entry = {
                 'id': elem.get('id'),
+                'depart': safe_get(elem, 'depart'),
+                'arrival': safe_get(elem, 'arrival'),
+                'duration': safe_get(elem, 'duration'),
+                'route': elem.get('id').split('.')[0],
                 'CO2_abs': safe_get(emissions, 'CO2_abs'),
-                # Add other fields as needed
+                'fuel_abs': safe_get(emissions, 'fuel_abs'),
+                'NOx_abs': safe_get(emissions, 'NOx_abs'),
+                'waitingTime': safe_get(elem, 'waitingTime'),
+                'timeLoss': safe_get(elem, 'timeLoss')
             }
             data.append(entry)
             elem.clear()
     return pd.DataFrame(data)
 
-# Load data with XML validation
+# Load and validate data
 try:
-    df = parse_xml('tripinfo.xml')
+    df = parse_xml('tripinfos.xml')
     print("Data Validation:")
     print(f"Total entries: {len(df)}")
     print(f"Non-zero CO₂ entries: {df[df['CO2_abs'] > 0].shape[0]}")
-    print(df[['id', 'CO2_abs']].head(10))
-except ET.ParseError as e:
-    print(f"XML Error: {e}")
+    print("\nSample Data:")
+    print(df[['id', 'CO2_abs', 'fuel_abs']].head())
+except Exception as e:
+    print(f"Error: {e}")
     exit()
 
 # Visualization setup
