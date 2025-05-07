@@ -1,109 +1,82 @@
 import xml.etree.ElementTree as ET
 import pandas as pd
 import matplotlib.pyplot as plt
-import seaborn as sns
-from matplotlib.gridspec import GridSpec
 
-def safe_get(element, attr, default=0.0):
-    """Enhanced XML attribute extraction with validation"""
-    try:
-        if element is None or attr not in element.attrib:
-            return default
-        return float(element.get(attr))
-    except (TypeError, ValueError, AttributeError):
-        return default
+# --- Configuration ---
+xml_file = 'tripinfos.xml'  # Input XML file
+output_image = 'traffic_report.png'  # Output figure
 
-def parse_xml(xml_file):
-    """XML parsing with route validation"""
-    data = []
-    valid_routes = {'left_right', 'right_left', 'right_down', 'left_down'}  # Add expected routes
-    
-    for event, elem in ET.iterparse(xml_file, events=('end',)):
-        if elem.tag == 'tripinfo':
-            route = elem.get('id').split('.')[0]
-            if '_' in route:  # Enhanced route validation
-                route = route.split('_', 1)[1]  # Get flow direction
-                
-            entry = {
-                'id': elem.get('id'),
-                'depart': safe_get(elem, 'depart'),
-                'duration': safe_get(elem, 'duration'),
-                'waiting': safe_get(elem, 'waitingTime'),
-                'timeLoss': safe_get(elem, 'timeLoss'),
-                'route': route if route in valid_routes else 'other',
-                'routeLength': safe_get(elem, 'routeLength'),
-            }
-            data.append(entry)
-            elem.clear()
-    return pd.DataFrame(data)
+# --- Parse XML ---
+root = ET.parse(xml_file).getroot()
+records = []
+for trip in root.findall('tripinfo'):
+    data = {
+        'id': trip.get('id'),
+        'depart': float(trip.get('depart')),
+        'arrival': float(trip.get('arrival')),
+        'duration': float(trip.get('duration')),
+        'routeLength': float(trip.get('routeLength')),
+        'waitingTime': float(trip.get('waitingTime')),
+        'stopTime': float(trip.get('stopTime')),
+        'timeLoss': float(trip.get('timeLoss')),
+        'departDelay': float(trip.get('departDelay')),
+        'waitingCount': int(trip.get('waitingCount')),
+        'vType': trip.get('vType'),
+    }
+    # derive route direction from id or departLane
+    data['route'] = trip.get('id').split('.')[0]
+    records.append(data)
 
-# Data processing
-try:
-    df = parse_xml('tripinfo.xml')
-    
-    print("Route Distribution:")
-    print(df['route'].value_counts())
-    
-    # Filter meaningful routes with minimum trips
-    route_counts = df['route'].value_counts()
-    valid_routes = route_counts[route_counts > 5].index
-    filtered_df = df[df['route'].isin(valid_routes)]
+df = pd.DataFrame(records)
 
-except Exception as e:
-    print(f"Error: {str(e)}")
-    exit()
+# --- Summary Statistics ---
+summary = pd.Series({
+    'Total Trips': len(df),
+    'Avg Duration (s)': df['duration'].mean(),
+    'Avg Time Loss (s)': df['timeLoss'].mean(),
+    'Avg Waiting Time (s)': df['waitingTime'].mean(),
+    'Total Stops': df['waitingCount'].sum(),
+    'Trips Delayed at Start': (df['departDelay'] > 0).sum(),
+    'Avg Depart Delay (s)': df['departDelay'].mean(),
+})
 
-# Visualization setup
-plt.figure(figsize=(24, 20))
-gs = GridSpec(3, 2, figure=plt.gcf())
-sns.set_theme(style="whitegrid", palette="pastel")
+# Print summary
+print("--- Traffic Report Summary ---")
+for k, v in summary.items():
+    print(f"{k}: {v:.2f}")
 
-# 1. Route Performance Metrics (Improved)
-ax1 = plt.subplot(gs[0, 0])
-route_stats = filtered_df.groupby('route').agg({
-    'duration': ['mean', 'std'],
-    'timeLoss': 'median',
-    'routeLength': 'first'
-}).reset_index()
+# --- Visualization ---
+plt.figure(figsize=(14, 10))
 
-# Flatten multi-index columns
-route_stats.columns = ['_'.join(col).strip() if isinstance(col, tuple) else col for col in route_stats.columns]
+# 1. Histogram of time loss
+plt.subplot(2, 2, 1)
+plt.hist(df['timeLoss'], bins=10)
+plt.title('Time Loss Distribution (s)')
+plt.xlabel('Time Loss (s)')
+plt.ylabel('Number of Trips')
 
-sns.barplot(x='route', y='duration_mean', 
-           data=route_stats, ax=ax1)
-plt.title('Average Trip Duration by Route', fontsize=14)
-plt.xlabel('Route')
-plt.ylabel('Duration (s)')
+# 2. Scatter of duration vs. waitingTime
+plt.subplot(2, 2, 2)
+plt.scatter(df['duration'], df['waitingTime'], alpha=0.7)
+plt.title('Trip Duration vs. Waiting Time')
+plt.xlabel('Duration (s)')
+plt.ylabel('Waiting Time (s)')
 
-# 3. Route Efficiency Analysis
-ax3 = plt.subplot(gs[1, 0])
-route_stats['efficiency'] = route_stats['routeLength_first'] / route_stats['duration_mean']
-sns.barplot(x='route', y='efficiency', data=route_stats, ax=ax3)
-plt.title('Route Efficiency (Distance/Duration)', fontsize=14)
-plt.ylabel('Efficiency (m/s)')
-
-# 4. Time Loss Distribution
-ax4 = plt.subplot(gs[1, 1])
-sns.boxplot(x='route', y='timeLoss', data=filtered_df, ax=ax4)
-plt.title('Time Loss Distribution by Route', fontsize=14)
+# 3. Bar chart of average timeLoss per route
+plt.subplot(2, 2, 3)
+avg_loss = df.groupby('route')['timeLoss'].mean().sort_values()
+avg_loss.plot(kind='bar')
+plt.title('Avg Time Loss per Route')
+plt.ylabel('Avg Time Loss (s)')
 plt.xticks(rotation=45)
 
-# 5. Route Length Comparison
-ax5 = plt.subplot(gs[2, 0])
-sns.barplot(x='route', y='routeLength', data=route_stats, ax=ax5)
-plt.title('Route Length Comparison', fontsize=14)
-plt.ylabel('Distance (m)')
-
-# 6. Duration vs Route Length
-ax6 = plt.subplot(gs[2, 1])
-sns.scatterplot(x='routeLength', y='duration', hue='route',
-               data=filtered_df, ax=ax6, alpha=0.6)
-plt.title('Trip Duration vs Route Length', fontsize=14)
-plt.xlabel('Route Length (m)')
-plt.ylabel('Duration (s)')
+# 4. Pie chart of delayed vs on-time departures
+plt.subplot(2, 2, 4)
+delayed = (df['departDelay'] > 0).sum()
+on_time = len(df) - delayed
+plt.pie([delayed, on_time], labels=['Delayed', 'On-Time'], autopct='%1.1f%%')
+plt.title('Departures: Delayed vs On-Time')
 
 plt.tight_layout()
-plt.savefig('enhanced_route_analysis.png', dpi=300, bbox_inches='tight')
-plt.close()
-
-print("Visualization saved as enhanced_route_analysis.png")
+plt.savefig(output_image, dpi=300)
+print(f"Report image saved to {output_image}")
