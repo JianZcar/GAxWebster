@@ -1,89 +1,86 @@
-#!/usr/bin/env python3
 import xml.etree.ElementTree as ET
 import pandas as pd
 import matplotlib.pyplot as plt
 
-# 1. Parse XML
+# 1. Load and parse the XML file from disk
 tree = ET.parse('tripinfo.xml')
 root = tree.getroot()
 
-# 2. Extract data
+# 2. Extract key fields into a DataFrame
 records = []
-for ti in root.findall('tripinfo'):
-    attrib = ti.attrib
-    em_elem = ti.find('emissions')
-    if em_elem is not None:
-        em = em_elem.attrib
-    else:
-        em = {k: '0' for k in ('fuel_abs','CO2_abs','NOx_abs','CO_abs','HC_abs','PMx_abs')}
-
-    flow = attrib['id'].split('.')[0].replace('flow_','')
-    records.append({
-        'id':           attrib.get('id',''),
-        'flow':         flow,
-        'duration':     float(attrib.get('duration', 0)),
-        'routeLength':  float(attrib.get('routeLength', 0)),
-        'timeLoss':     float(attrib.get('timeLoss', 0)),
-        'waitingTime':  float(attrib.get('waitingTime', 0)),
-        'fuel_abs':     float(em.get('fuel_abs', 0)),
-        'CO2_abs':      float(em.get('CO2_abs', 0)),
-        'NOx_abs':      float(em.get('NOx_abs', 0)),
-        'CO_abs':       float(em.get('CO_abs', 0)),
-        'HC_abs':       float(em.get('HC_abs', 0)),
-        'PMx_abs':      float(em.get('PMx_abs', 0)),
-        'speedFactor':  float(attrib.get('speedFactor', 0)),
-        'arrivalSpeed': float(attrib.get('arrivalSpeed', 0)),
-    })
+for trip in root.findall('tripinfo'):
+    rec = {
+        'id': trip.get('id'),
+        'duration': float(trip.get('duration')),
+        'routeLength': float(trip.get('routeLength')),
+        'waitingTime': float(trip.get('waitingTime')),
+        'timeLoss': float(trip.get('timeLoss')),
+        # pick two representative emissions metrics
+        'CO2_abs': float(trip.find('emissions').get('CO2_abs')),
+        'fuel_abs': float(trip.find('emissions').get('fuel_abs')),
+    }
+    records.append(rec)
 
 df = pd.DataFrame(records)
+df.to_csv('tripinfo.csv', index=False)
+print("Saved aggregated data to tripinfo.csv")
 
-def save_fig(fig, name):
-    fig.tight_layout()
-    fig.savefig(name)
-    plt.close(fig)
+# 3. Display the DataFrame (optional interactive)
+print(df)
 
-# 3. Duration vs. Route Length
-fig = plt.figure()
-plt.scatter(df['routeLength'], df['duration'])
+# 4. Bar chart of trip durations
+plt.figure()
+plt.bar(df['id'], df['duration'])
+plt.xlabel('Trip ID')
+plt.ylabel('Duration (s)')
+plt.title('Trip Duration by ID')
+plt.xticks(rotation=45, ha='right')
+plt.tight_layout()
+plt.savefig('duration_bar.png')
+plt.close()
+
+# 5. Scatter: Route Length vs Duration
+plt.figure()
+plt.scatter(df['routeLength'], df['duration'], marker='o')
+for i, txt in enumerate(df['id']):
+    plt.annotate(txt, (df['routeLength'][i], df['duration'][i]))
 plt.xlabel('Route Length (m)')
 plt.ylabel('Duration (s)')
-plt.title('Trip Duration vs. Route Length')
-save_fig(fig, 'duration_vs_route_length.png')
+plt.title('Duration vs Route Length')
+plt.tight_layout()
+plt.savefig('duration_vs_length.png')
+plt.close()
 
-# 4. Stacked Emissions per Vehicle
-fig, ax = plt.subplots()
-em_cols = ['CO2_abs','NOx_abs','CO_abs','HC_abs','PMx_abs']
-df.set_index('id')[em_cols].plot(kind='bar', stacked=True, ax=ax)
-ax.set_xlabel('Vehicle ID')
-ax.set_ylabel('Emissions (mg)')
-ax.set_title('Stacked Emissions per Trip')
-labels = ax.get_xticklabels()
-ax.set_xticklabels(labels, rotation=45, ha='right')
-save_fig(fig, 'emissions_per_vehicle.png')
+# 6. Histogram of time loss
+plt.figure()
+plt.hist(df['timeLoss'], bins=5)
+plt.xlabel('Time Loss (s)')
+plt.ylabel('Number of Trips')
+plt.title('Distribution of Time Loss')
+plt.tight_layout()
+plt.savefig('timeLoss_hist.png')
+plt.close()
 
-# 5. Fuel vs. CO2
-fig = plt.figure()
-plt.scatter(df['fuel_abs'], df['CO2_abs'])
-plt.xlabel('Fuel Consumed (mg)')
-plt.ylabel('CO2 Emitted (mg)')
-plt.title('Fuel Consumption vs. CO2 Emissions')
-save_fig(fig, 'fuel_vs_co2.png')
+# 7. CO2 Emissions per trip
+plt.figure()
+plt.bar(df['id'], df['CO2_abs'])
+plt.xlabel('Trip ID')
+plt.ylabel('CO₂ Emissions (g)')
+plt.title('CO₂ Emissions by Trip')
+plt.xticks(rotation=45, ha='right')
+plt.tight_layout()
+plt.savefig('CO2_emissions_bar.png')
+plt.close()
 
-# 6. Time Loss by Flow Direction
-fig, ax = plt.subplots()
-df.boxplot(column='timeLoss', by='flow', ax=ax)
-ax.set_xlabel('Flow Direction')
-ax.set_ylabel('Time Loss (s)')
-ax.set_title('Time Loss by Flow Direction')
-fig.suptitle('')
-save_fig(fig, 'time_loss_by_flow.png')
+# 8. Fuel consumption per trip
+plt.figure()
+plt.bar(df['id'], df['fuel_abs'])
+plt.xlabel('Trip ID')
+plt.ylabel('Fuel Consumed (ml)')
+plt.title('Fuel Consumption by Trip')
+plt.xticks(rotation=45, ha='right')
+plt.tight_layout()
+plt.savefig('fuel_consumption_bar.png')
+plt.close()
 
-# 7. Speed Factor vs. Final Speed
-fig = plt.figure()
-plt.scatter(df['speedFactor'], df['arrivalSpeed'])
-plt.xlabel('Speed Factor')
-plt.ylabel('Arrival Speed (m/s)')
-plt.title('Speed Factor vs. Final Speed')
-save_fig(fig, 'speed_factor_vs_final_speed.png')
-
-print("All plots generated and saved as PNG files.")
+print("Plots saved: duration_bar.png, duration_vs_length.png, timeLoss_hist.png, CO2_emissions_bar.png, fuel_consumption_bar.png")
