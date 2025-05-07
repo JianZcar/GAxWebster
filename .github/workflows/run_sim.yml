@@ -31,7 +31,7 @@ jobs:
           python-version: '3.10'
 
       - name: 📦 Install dependencies
-        run: pip install matplotlib pandas
+        run: pip install matplotlib pandas seaborn
 
       - name: 🚀 Run graph generator
         run: python src/generate_stats.py
