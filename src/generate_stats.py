@@ -1,102 +1,79 @@
 import xml.etree.ElementTree as ET
 import pandas as pd
 import matplotlib.pyplot as plt
-import math
+import seaborn as sns
 
-# 1. Parse the XML from file
-tree = ET.parse('tripinfo.xml')
+# Parse XML data
+tree = ET.parse('tripinfos.xml')
 root = tree.getroot()
 
-# 2. Extract data, with safe handling if <emissions> is missing
-records = []
+# Extract data into a list of dictionaries
+data = []
 for trip in root.findall('tripinfo'):
-    # Base attributes
-    rec = {
+    emissions = trip.find('emissions')
+    entry = {
         'id': trip.get('id'),
-        'duration': float(trip.get('duration') or math.nan),
-        'routeLength': float(trip.get('routeLength') or math.nan),
-        'waitingTime': float(trip.get('waitingTime') or math.nan),
-        'timeLoss': float(trip.get('timeLoss') or math.nan),
+        'depart': float(trip.get('depart')),
+        'arrival': float(trip.get('arrival')),
+        'duration': float(trip.get('duration')),
+        'route': trip.get('id').split('.')[0],
+        'CO2_abs': float(emissions.get('CO2_abs')),
+        'fuel_abs': float(emissions.get('fuel_abs')),
+        'NOx_abs': float(emissions.get('NOx_abs')),
+        'waitingTime': float(trip.get('waitingTime')),
+        'timeLoss': float(trip.get('timeLoss'))
     }
-    # Find any child whose tag ends with 'emissions'
-    emis = None
-    for child in trip:
-        if child.tag.endswith('emissions'):
-            emis = child
-            break
-    # Populate emissions metrics if present
-    if emis is not None:
-        rec['CO2_abs']  = float(emis.get('CO2_abs' ) or math.nan)
-        rec['fuel_abs'] = float(emis.get('fuel_abs') or math.nan)
-    else:
-        rec['CO2_abs']  = math.nan
-        rec['fuel_abs'] = math.nan
+    data.append(entry)
 
-    records.append(rec)
+# Create DataFrame
+df = pd.DataFrame(data)
 
-# 3. Build DataFrame and save
-df = pd.DataFrame(records)
-df.to_csv('tripinfo.csv', index=False)
-print("Saved tripinfo.csv:")
-print(df)
+# Set style
+sns.set(style="whitegrid", palette="pastel")
+plt.figure(figsize=(12, 8))
 
-# 4. Visualizations
+# Visualization 1: Time vs Duration with Emissions
+plt.subplot(2, 2, 1)
+scatter = sns.scatterplot(x='depart', y='duration', hue='CO2_abs', 
+                         size='fuel_abs', data=df, palette='viridis')
+plt.title('Trip Duration vs Departure Time\n(Color: CO₂ Emissions, Size: Fuel Consumption)')
+plt.xlabel('Departure Time (s)')
+plt.ylabel('Duration (s)')
+plt.legend(bbox_to_anchor=(1.05, 1), loc='upper left')
 
-# 4a. Bar chart: Trip Duration
-plt.figure()
-plt.bar(df['id'], df['duration'])
-plt.xlabel('Trip ID'); plt.ylabel('Duration (s)')
-plt.title('Trip Duration by ID')
-plt.xticks(rotation=45, ha='right')
+# Visualization 2: Emissions Distribution
+plt.subplot(2, 2, 2)
+sns.histplot(df['CO2_abs'], kde=True, color='teal')
+plt.title('Distribution of CO₂ Emissions')
+plt.xlabel('CO₂ Emissions (mg)')
+plt.ylabel('Number of Trips')
+
+# Visualization 3: Fuel vs CO2 Emissions
+plt.subplot(2, 2, 3)
+sns.regplot(x='fuel_abs', y='CO2_abs', data=df, scatter_kws={'alpha':0.5})
+plt.title('Fuel Consumption vs CO₂ Emissions')
+plt.xlabel('Fuel Consumption (ml)')
+plt.ylabel('CO₂ Emissions (mg)')
+
+# Visualization 4: Route Performance
+plt.subplot(2, 2, 4)
+route_metrics = df.groupby('route').agg({
+    'duration': 'mean',
+    'timeLoss': 'mean',
+    'CO2_abs': 'mean'
+}).reset_index()
+
+melted = route_metrics.melt(id_vars='route', 
+                           value_vars=['duration', 'timeLoss', 'CO2_abs'],
+                           var_name='metric')
+
+sns.barplot(x='value', y='route', hue='metric', data=melted, orient='h')
+plt.title('Route Performance Comparison')
+plt.xlabel('Value')
+plt.ylabel('Route')
+plt.legend(title='Metric')
+
+# Adjust layout and save
 plt.tight_layout()
-plt.savefig('duration_bar.png')
-plt.close()
-
-# 4b. Scatter: Route Length vs Duration
-plt.figure()
-plt.scatter(df['routeLength'], df['duration'])
-for i, txt in enumerate(df['id']):
-    plt.annotate(txt,
-                 (df['routeLength'].iat[i], df['duration'].iat[i]),
-                 textcoords="offset points", xytext=(0,5), ha='center')
-plt.xlabel('Route Length (m)'); plt.ylabel('Duration (s)')
-plt.title('Duration vs Route Length')
-plt.tight_layout()
-plt.savefig('duration_vs_length.png')
-plt.close()
-
-# 4c. Histogram: Time Loss
-plt.figure()
-plt.hist(df['timeLoss'].dropna(), bins=5)
-plt.xlabel('Time Loss (s)'); plt.ylabel('Number of Trips')
-plt.title('Distribution of Time Loss')
-plt.tight_layout()
-plt.savefig('timeLoss_hist.png')
-plt.close()
-
-# 4d. Bar: CO₂ Emissions
-plt.figure()
-plt.bar(df['id'], df['CO2_abs'])
-plt.xlabel('Trip ID'); plt.ylabel('CO₂ Emissions (g)')
-plt.title('CO₂ Emissions by Trip')
-plt.xticks(rotation=45, ha='right')
-plt.tight_layout()
-plt.savefig('CO2_emissions_bar.png')
-plt.close()
-
-# 4e. Bar: Fuel Consumption
-plt.figure()
-plt.bar(df['id'], df['fuel_abs'])
-plt.xlabel('Trip ID'); plt.ylabel('Fuel Consumed (ml)')
-plt.title('Fuel Consumption by Trip')
-plt.xticks(rotation=45, ha='right')
-plt.tight_layout()
-plt.savefig('fuel_consumption_bar.png')
-plt.close()
-
-print("Charts saved:")
-print(" duration_bar.png")
-print(" duration_vs_length.png")
-print(" timeLoss_hist.png")
-print(" CO2_emissions_bar.png")
-print(" fuel_consumption_bar.png")
+plt.savefig('trip_analysis.png', dpi=300, bbox_inches='tight')
+plt.show()
