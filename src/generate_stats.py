@@ -4,7 +4,7 @@ import matplotlib.pyplot as plt
 import seaborn as sns
 
 # Parse XML data
-tree = ET.parse('tripinfos.xml')
+tree = ET.parse('tripinfo.xml')
 root = tree.getroot()
 
 # Extract data into a list of dictionaries
