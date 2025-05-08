@@ -34,7 +34,9 @@ jobs:
         run: pip install matplotlib pandas seaborn
 
       - name: 🚀 Run graph generator
-        run: python src/generate_stats.py
+        run: |
+          python src/generate_stats.py
+          python src/generate_flow.py  
 
       - name: 📂 Upload graph artifact
         uses: actions/upload-artifact@v4.6.2
