@@ -30,9 +30,9 @@
     <flow id="flow_right_left" type="car" route="right_to_left" departLane="0" begin="0" end="3600" vehsPerHour="300"/>
 
     <!-- Right → Down (uses lane 1) -->
-    <flow id="flow_right_down" type="car" route="right_to_down" departLane="1" begin="0" end="3600" vehsPerHour="300"/>
+    <flow id="flow_right_down" type="car" route="right_to_down" departLane="0" begin="0" end="3600" vehsPerHour="300"/>
     
-    <flow id="flow_down_right" type="car" route="down_to_right" departLane="1" begin="0" end="3600" vehsPerHour="300"/>
+    <flow id="flow_down_right" type="car" route="down_to_right" departLane="0" begin="0" end="3600" vehsPerHour="300"/>
     
     <flow id="flow_down_left" type="car" route="down_to_left" departLane="1" begin="0" end="3600" vehsPerHour="300"/>
 </routes>
