@@ -1,13 +1,13 @@
-<additional>
-    <!-- Left-to-Center connections -->
-    <connection from="left_to_center" fromLane="0" to="center_to_down" toLane="0"/>  <!-- Through traffic -->
-    <connection from="left_to_center" fromLane="1" to="center_to_right" toLane="1"/>   <!-- Left-turn -->
+<connections>
+    <!-- East_in (E → J0) -->
+    <connection from="E_in" to="W_out" fromLane="0" toLane="0"/> <!-- Straight -->
+    <connection from="E_in" to="S_out" fromLane="1" toLane="1"/> <!-- Left turn to South -->
 
-    <!-- Right-to-Center connections -->
-    <connection from="right_to_center" fromLane="0" to="center_to_left" toLane="0"/>  <!-- Through traffic -->
-    <connection from="right_to_center" fromLane="1" to="center_to_down" toLane="1"/>  <!-- Right-turn -->
+    <!-- West_in (W → J0) -->
+    <connection from="W_in" to="E_out" fromLane="1" toLane="1"/> <!-- Straight -->
+    <connection from="W_in" to="S_out" fromLane="0" toLane="0"/> <!-- Right turn to South -->
 
-    <!-- Down-to-Center connections (optional) -->
-    <connection from="down_to_center" fromLane="0" to="center_to_right" toLane="0"/>   <!-- Upward traffic -->
-    <connection from="down_to_center" fromLane="1" to="center_to_left" toLane="1"/>  <!-- Upward traffic -->
-</additional>
+    <!-- South_in (S → J0) -->
+    <connection from="S_in" to="E_out" fromLane="0" toLane="0"/> <!-- Left turn to East -->
+    <connection from="S_in" to="W_out" fromLane="1" toLane="1"/> <!-- Right turn to West -->
+</connections>

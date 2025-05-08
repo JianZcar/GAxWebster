@@ -31,12 +31,11 @@ jobs:
           python-version: '3.10'
 
       - name: 📦 Install dependencies
-        run: pip install matplotlib pandas seaborn
+        run: pip install matplotlib pandas
 
-      - name: 🚀 Run graph generator
+      - name: 🚀 Create Stats Report
         run: |
           python src/generate_stats.py
-          python src/generate_flow.py  
 
       - name: 📂 Upload graph artifact
         uses: actions/upload-artifact@v4.6.2
