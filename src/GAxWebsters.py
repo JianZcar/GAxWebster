@@ -299,8 +299,8 @@ def fitness(traffic_configuration: TrafficConfiguration) -> float:
         # 5. Weighted fitness score (lower = better)
         weights = {
             'time_loss': 0.5,
-            'waiting': 0.3,
-            'stops': 0.15,
+            'waiting': 0.4,
+            'stops': 0.4,
             'delays': 0.05
         }
         score = (
@@ -451,7 +451,7 @@ def mutation(
 def run_evolution(
     population_dict: dict,
     fitness_func: FitnessFunc = fitness,
-    generation_limit: int = 10
+    generation_limit: int = 20
 ) -> Tuple[Population, int]:
     # Convert dictionary to list of configurations
     population = list(population_dict.values())
