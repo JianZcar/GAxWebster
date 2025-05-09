@@ -1,0 +1,22 @@
+<additional>
+  <tlLogic id="J0" type="static" programID="custom_program" offset="0">
+    <!-- 1=W_E 2=W_S 3=S_W 4=S_E 5=E_S 6=E_W -->
+    <!-- Phase 1 -->
+    <phase duration="30" state="GrGrGG"/> 
+
+    <!-- Yellow transition for Phase 1 → 2 -->
+    <phase duration="3"  state="GryyGy"/> 
+
+    <!-- Phase 2 -->
+    <phase duration="30" state="GrGGGr"/> 
+
+    <!-- Yellow transition for Phase 2 → 3 -->
+    <phase duration="3"  state="GyGyGr"/> 
+
+    <!-- Phase 3 -->
+    <phase duration="30" state="GGGrGr"/> 
+
+    <!-- Yellow transition for Phase 3 → 1 -->
+    <phase duration="3"  state="GyGrGy"/> 
+  </tlLogic>
+</additional>
