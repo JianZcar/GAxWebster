@@ -1,12 +1,17 @@
 from collections import namedtuple
 from functools import partial
-from random import choices, randint, random, randrange, uniform
+from random import choices, randint, random, randrange, uniform, sample
 from typing import Callable, List, Tuple
 from math import ceil
 from dataclasses import dataclass
+from insert_sumo import generate_tl_logic
 import numpy as np
 import copy
 import pprint
+import subprocess
+from xml.dom import minidom
+import xml.etree.ElementTree as ET
+import os
 
 ###############
 ### TYPINGS ###
@@ -209,17 +214,6 @@ intersection_params = IntersectionParams(
     vehicle_length=4.5                    # m
 )
 
-population = generate_population(
-    size=20, intersection_params=intersection_params)
-
-with open("output.txt", "w") as f:
-    f.write("Intersection Parameters:\n")
-    f.write(pprint.pformat(intersection_params) + "\n\n")
-
-    f.write("Population:\n")
-    f.write(pprint.pformat(population))
-
-
 #########################
 ### GENETIC ALGORITHM ###
 #########################
@@ -250,34 +244,100 @@ def selection(
 
 
 def fitness(traffic_configuration: TrafficConfiguration) -> float:
-    # IKAW NA BAHALA DITO, JIAN
-    pass
+    """Evaluate traffic config using SUMO simulation metrics"""
+    try:
+        min_green = 5
+        if any(phase.green < min_green for phase in traffic_configuration):  # Remove 
+            return float('inf')
+        # 1. Generate traffic light XML
+        tl_xml = generate_tl_logic(traffic_configuration)
+        with open("traffic_lights.add.xml", "w") as f:
+            f.write(tl_xml)
 
+        # 2. Run SUMO simulation
+        sumo_cmd = [
+            "sumo",
+            "-n", "road-configuration/net.xml",        # Your network file
+            "-r", "road-configuration/routes.xml",         # Your routes file
+            "--additional-files", "traffic_lights.add.xml",
+            "--tripinfo-output", "tripinfo.xml",
+        ]
+        result = subprocess.run(sumo_cmd, 
+                               stdout=subprocess.DEVNULL,
+                               stderr=subprocess.DEVNULL,
+                               check=True)
+
+        # 3. Parse simulation results
+        tree = ET.parse('tripinfo.xml')
+        root = tree.getroot()
+        
+        metrics = {
+            'total_time_loss': 0.0,
+            'total_waiting': 0.0,
+            'total_stops': 0,
+            'delayed_departures': 0,
+            'count': 0
+        }
+
+        for trip in root.findall('tripinfo'):
+            metrics['count'] += 1
+            metrics['total_time_loss'] += float(trip.get('timeLoss', 0))
+            metrics['total_waiting'] += float(trip.get('waitingTime', 0))
+            metrics['total_stops'] += int(trip.get('waitingCount', 0))
+            if float(trip.get('departDelay', 0)) > 0:
+                metrics['delayed_departures'] += 1
+
+        if metrics['count'] == 0:
+            return float('inf')
+
+        # 4. Calculate fitness components
+        avg_time_loss = metrics['total_time_loss'] / metrics['count']
+        avg_waiting = metrics['total_waiting'] / metrics['count']
+        stops_per_trip = metrics['total_stops'] / metrics['count']
+        delayed_ratio = metrics['delayed_departures'] / metrics['count']
+
+        # 5. Weighted fitness score (lower = better)
+        weights = {
+            'time_loss': 0.5,
+            'waiting': 0.3,
+            'stops': 0.15,
+            'delays': 0.05
+        }
+        score = (
+            weights['time_loss'] * avg_time_loss +
+            weights['waiting'] * avg_waiting +
+            weights['stops'] * stops_per_trip +
+            weights['delays'] * delayed_ratio
+        )
+
+        # 6. Add penalty for invalid configurations
+        if any(phase.green < 5 for phase in traffic_configuration):
+            score *= 1.5
+        
+        print(f"Simulation stats:")
+        print(f"- Avg time loss: {avg_time_loss:.1f}s")
+        print(f"- Avg waiting: {avg_waiting:.1f}s")
+        print(f"- Stops per trip: {stops_per_trip:.1f}")
+
+        return round(score, 2)
+
+    except Exception as e:
+        print(f"Fitness calculation failed: {str(e)}")
+        return float('inf')
 
 def linear_crossover(
     x: int, y: int
 ) -> Tuple[int, int, int]:
     """
-    Performs linear crossover on two integer values.
-
-    Generates three offspring values from parents `x` and `y` using:
-      - A randomized interpolation/extrapolation controlled by a blending factor `alpha`
-        sampled from the range [-0.5, 1.5] (first two children).
-      - A simple arithmetic mean (third child).
-
-    This method introduces diversity by potentially exploring values beyond the parent range.
-
-    Args:
-        x (int): First parent value.
-        y (int): Second parent value.
-
-    Returns:
-        Tuple[int, int, int]: Three offspring values resulting from linear crossover.
+    Performs linear crossover with minimum green time enforcement.
     """
     alpha = uniform(-0.5, 1.5)
-    c1 = int(x + alpha * (y - x))
-    c2 = int(y + alpha * (x - y))
-    c3 = int(0.5 * (x + y))
+    min_green = 5  # Minimum allowed green time
+    
+    c1 = max(min_green, int(x + alpha * (y - x)))
+    c2 = max(min_green, int(y + alpha * (x - y)))
+    c3 = max(min_green, int(0.5 * (x + y)))
+    
     return c1, c2, c3
 
 
@@ -353,7 +413,7 @@ def mutation(
         TrafficConfiguration: A new traffic configuration with the green time 
         of one phase mutated and the rest adjusted accordingly.
     """
-    num_phases = len(traffic_configuration.phases)
+    num_phases = len(traffic_configuration)
     if num_phases <= 1:
         return traffic_configuration
 
@@ -362,20 +422,24 @@ def mutation(
     i = randint(0, num_phases - 1)
     mutation = uniform(-delta, delta)
 
-    mutated_configuration.phases[i].green += mutation
+    mutated_configuration[i].green += mutation
 
-    if mutated_configuration.phases[i].green < min_green:
-        mutation += min_green - mutated_configuration.phases[i].green
-        mutated_configuration.phases[i].green = min_green
+    if mutated_configuration[i].green < min_green:
+        mutation += min_green - mutated_configuration[i].green
+        mutated_configuration[i].green = min_green
 
     redistribution = -mutation / (num_phases - 1)
 
     for j in range(num_phases):
         if j == i:
             continue
-        mutated_configuration.phases[j].green += redistribution
-        if mutated_configuration.phases[j].green < min_green:
-            mutated_configuration.phases[j].green = min_green
+        mutated_configuration[j].green += redistribution
+        if mutated_configuration[j].green < min_green:
+            mutated_configuration[j].green = min_green
+    
+    for phase in mutated_configuration:
+        if phase.green < min_green:
+            phase.green = min_green
 
     return mutated_configuration
 
@@ -385,49 +449,45 @@ def mutation(
 
 
 def run_evolution(
-    populate_func: PopulateFunc,
-    fitness_func: FitnessFunc,
-    selection_func: SelectionFunc = selection,
-    crossover_func: CrossoverFunc = crossover,
-    mutation_func: MutationFunc = mutation,
-    generation_limit: int = 100
+    population_dict: dict,
+    fitness_func: FitnessFunc = fitness,
+    generation_limit: int = 10
 ) -> Tuple[Population, int]:
-    population = populate_func()
-
+    # Convert dictionary to list of configurations
+    population = list(population_dict.values())
+    
     for generation in range(generation_limit):
-        population = sorted(
-            population,
-            key=lambda traffic_configuration: fitness_func(
-                traffic_configuration),
-            reverse=True
-        )
-
-        next_generation = population[0:2]
-
-        for j in range(int(len(population) / 2) - 1):
-            parents = selection_func(population, fitness_func)
-            offspring_a, offspring_b = crossover_func(parents[0], parents[1])
-            offspring_a = mutation_func(offspring_a)
-            offspring_b = mutation_func(offspring_b)
-            next_generation += [offspring_a, offspring_b]
-
-        population = next_generation
-
-    population = sorted(
-        population,
-        key=lambda genome: fitness_func(genome),
-        reverse=True
-    )
-
-    return population, generation
-
-
-population, generations = run_evolution(
-    populate_func=partial(
-        generate_population, size=10, intersection_params=intersection_params
-    ),
-    fitness_func=partial(
-        # THIS IS YOUR PART, JIAN
-    ),
-    generation_limit=100
-)
+        print(f"\n--- Generation {generation+1}/{generation_limit} ---")
+        # Evaluate and sort population by fitness (lower is better)
+        population.sort(key=lambda config: fitness_func(config))
+        
+        # Keep top 20% elites
+        elite_size = max(2, int(len(population) * 0.2))
+        next_gen = population[:elite_size]
+        
+        # Fill remaining slots through selection, crossover and mutation
+        while len(next_gen) < len(population):
+            # Select parents using tournament selection
+            parents = [
+                min(sample(population, k=3), 
+                key=lambda x: fitness_func(x)
+            ) for _ in range(2)
+            ]
+            
+            # Generate offspring
+            offspring = crossover(parents[0], parents[1])
+            
+            # Mutate and add to new generation
+            next_gen.extend([
+                mutation(child) for child in offspring
+                if len(next_gen) < len(population)
+            ])
+        
+        population = next_gen
+        
+    best_score = fitness_func(population[0])
+    print(f"Best fitness: {best_score}")
+    print(f"Worst fitness: {fitness_func(population[-1])}")
+    
+    # Return sorted population and generation count
+    return sorted(population, key=lambda config: fitness_func(config)), generation
