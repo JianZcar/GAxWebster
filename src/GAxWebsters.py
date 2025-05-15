@@ -4,7 +4,7 @@ from random import choices, randint, random, randrange, uniform, sample
 from typing import Callable, List, Tuple
 from math import ceil
 from dataclasses import dataclass
-from insert_sumo import generate_tl_logic
+from xml_generators import generate_tl_logic
 import numpy as np
 import copy
 import pprint
@@ -122,7 +122,7 @@ def simulate_poisson_arrival_rate(q: float) -> int:
     Returns:
         An integer count of arrivals.
     """
-    return ceil(np.random.poisson(lam=q))
+    return max(1, ceil(np.random.poisson(lam=q)))
 
 
 def compute_signal_config_with_poisson(

@@ -10,7 +10,6 @@ def get_saturation_flow():
         root = tree.getroot()
         vtype = root.find('vType')
 
-        # SUMO parameters with defaults (verify these match your routes.xml!)
         params = {
             'length': 5.0,
             'minGap': 2.5,

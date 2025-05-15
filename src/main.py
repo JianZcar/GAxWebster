@@ -1,12 +1,12 @@
 from GAxWebsters import compute_signal_config_with_poisson, run_evolution, IntersectionParams, generate_population
-from insert_sumo import generate_tl_logic
+from xml_generators import generate_tl_logic
 from generate_stats import generate_traffic_report
-import get_sumo
+import data_capture
 import subprocess
 import os
 
-saturation_flow = get_sumo.get_saturation_flow()
-average_flows = get_sumo.get_average_flow()
+saturation_flow = data_capture.get_saturation_flow()
+average_flows = data_capture.get_average_flow()
 
 subprocess.run(
         [
