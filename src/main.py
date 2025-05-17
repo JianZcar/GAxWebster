@@ -1,8 +1,9 @@
 from GAxWebsters import compute_signal_config_with_poisson, run_evolution, IntersectionParams, generate_population
 from xml_generators import generate_tl_logic
-from generate_stats import generate_traffic_report
+from export_data import generate_traffic_report
 import data_capture
 import subprocess
+import pprint
 import os
 
 saturation_flow = data_capture.get_saturation_flow()
@@ -23,10 +24,10 @@ subprocess.run(
 
 generate_traffic_report("tripinfo.xml", "Initial_traffic_bySUMO.png")
 intersection_params = IntersectionParams(
-    saturation_flows=[saturation_flow, saturation_flow, saturation_flow], 
-    lambda_rates=[round(average_flows['E_in']/60, 2), round(average_flows['W_in']/60, 2), round(average_flows['S_in']/60, 2)],
+    saturation_flows=[saturation_flow, saturation_flow, saturation_flow, saturation_flow], 
+    lambda_rates=[round(average_flows['E_in']/60, 2), round(average_flows['W_in']/60, 2), round(average_flows['S_in']/60, 2), round(average_flows['N_in']/60, 2)],
     reaction_time=1.0,                    # s
-    road_widths=[3.2, 3.2, 3.2],          # m
+    road_widths=[3.2, 3.2, 3.2, 3.2],          # m
     vehicle_speed=13.89,                  # m/s
     deceleration_rate=4.5,                # m/s^2
     vehicle_length=5                      # m
@@ -79,7 +80,9 @@ subprocess.run(
 
 generate_traffic_report("tripinfo.xml", "finalGA.png")
 print("Initial Websters")
-print(list(population.values())[0])
+population = list(population.values())
+#population.sort(key=lambda config: fitness(config))
+print(population[0])
 
 
 print("Final GA")   

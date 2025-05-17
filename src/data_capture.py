@@ -57,23 +57,26 @@ def get_average_flow():
         "-n", "road-configuration/net.xml", 
         "-r", "road-configuration/routes.xml"]
     traci.start(sumo_cmd)
+    print("All edges:", traci.edge.getIDList())
     
     # Initialize data structures
-    incoming_edges = ['W_in', 'S_in', 'E_in']
+    incoming_edges = ['W_in', 'S_in', 'N_in','E_in']
     vehicle_counts = {edge: 0 for edge in incoming_edges}
     has_traffic_light = False
 
     try:
         # Check if traffic light exists
         tl_ids = traci.trafficlight.getIDList()
-        if 'J0' in tl_ids:
-            has_traffic_light = True
-            junction_id = "J0"
-            # Phase to incoming edge mapping
+        if 'J0' in traci.trafficlight.getIDList():
+            tl_program = traci.trafficlight.getCompleteRedYellowGreenDefinition('J0')
+            print("Traffic light phases:", tl_program)
+            
+            # Example mapping (adjust based on actual phases):
             phase_incoming = {
-                0: 'E_in',
-                1: 'W_in',
-                2: 'S_in'
+                0: 'E_in',  # Phase 0: East green
+                1: 'N_in',  # Phase 1: North green
+                2: 'W_in',  # Phase 2: West green
+                3: 'S_in'   # Phase 3: South green
             }
     except traci.TraCIException:
         has_traffic_light = False
