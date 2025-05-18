@@ -1,7 +1,8 @@
 <nodes>
-    <node id="J0" x="0.0" y="0.0" type="traffic_light"/> <!-- Junction -->
-    <node id="E" x="100.0" y="0.0"/>  <!-- East endpoint -->
-    <node id="W" x="-100.0" y="0.0"/> <!-- West endpoint -->
-    <node id="S" x="0.0" y="-100.0"/> <!-- South endpoint -->
-    <node id="N" x="0.0" y="100.0"/> <!-- South endpoint -->
+    <node id="E" x="30.00" y="0.00" type="priority"/>
+    <node id="E1" x="100.00" y="0.00" type="dead_end"/>
+    <node id="J0" x="0.00" y="0.00" type="traffic_light" tl="J0"/>
+    <node id="N" x="0.00" y="30.00" type="priority"/>
+    <node id="N1" x="0.00" y="100.00" type="dead_end"/>
+    <node id="W" x="-100.00" y="0.00" type="dead_end"/>
 </nodes>

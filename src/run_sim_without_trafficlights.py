@@ -1,7 +1,7 @@
 from GAxWebsters import compute_signal_config_with_poisson, run_evolution, IntersectionParams, generate_population
-from insert_sumo import generate_tl_logic
-from generate_stats import generate_traffic_report
-import get_sumo
+from xml_generators import generate_tl_logic
+from export_data import generate_traffic_report
+import data_capture
 import subprocess
 import os
 
@@ -17,7 +17,7 @@ subprocess.run(
         capture_output=True,
         text=True
     )
-
+data_capture.get_average_flow()
 generate_traffic_report("tripinfo.xml", "Initial_notrafficlight_bySUMO.png")
 
 

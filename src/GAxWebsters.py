@@ -251,10 +251,8 @@ import os
 def _evaluate_config(traffic_configuration: TrafficConfiguration, workdir: str) -> float:
     """Run SUMO in `workdir`, parse tripinfo.xml, and compute the weighted score."""
     # write TL‐logic
-    tl_xml = generate_tl_logic(traffic_configuration)
-    xml_path = os.path.join(workdir, "traffic_lights.add.xml")
-    with open(xml_path, "w") as f:
-        f.write(tl_xml)
+    generate_tl_logic('road-configuration/connections.xml', f'{workdir}/tl_logic.xml', traffic_configuration)
+    xml_path = os.path.join(workdir, "tl_logic.xml")
 
     # run SUMO
     tripinfo_path = os.path.join(workdir, "tripinfo.xml")
@@ -264,6 +262,7 @@ def _evaluate_config(traffic_configuration: TrafficConfiguration, workdir: str) 
         "-r", "road-configuration/routes.xml",
         "--additional-files", xml_path,
         "--tripinfo-output", tripinfo_path,
+        "--verbose"
     ]
     subprocess.run(sumo_cmd, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL, check=True)
 
